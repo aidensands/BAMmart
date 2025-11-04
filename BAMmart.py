@@ -5,8 +5,6 @@ import os
 import sys
 import argparse
 
-batch_size = 400
-
 
 def find_bam_files(root_dir: str) -> list:
     """
@@ -67,6 +65,33 @@ def parse_enst(bam) -> list:
         return []
     except Exception as e:
         print(f"An error occurred during pysam processing for {bam}: {e}")
+        return []
+
+
+def parse_ensg(bam):
+    ids = set()
+    try:
+        with pysam.AlignmentFile(filename=bam, mode='rb') as samfile:
+            for read in samfile.fetch(until_eof=True):
+                if read.is_unmapped:
+                    continue
+
+                gene_id = None
+                for tag in ['GX', 'GE', 'GN']:
+                    try:
+                        val = read.get_tag(tag)
+                        if val.startswith('ENSG'):
+                            gene_id = val
+                            break
+
+                    except KeyError:
+                        continue
+
+                if gene_id:
+                    ids.add(gene_id)
+
+    except FileNotFoundError:
+        print(f"No file found at {bam}")
         return []
 
 
@@ -205,7 +230,8 @@ if __name__ == '__main__':
             f"Found {len(all_enst_ids)} total unique ENST IDs across {len(all_bam_files)} files.")
 
         final_enst_list = list(all_enst_ids)
-        biomart_df = biomart_query(final_enst_list, args.filter, args.attributes, batch_size=args.batch_size)
+        biomart_df = biomart_query(
+            final_enst_list, args.filter, args.attributes, batch_size=args.batch_size)
 
         print("Biomart Queries Complete :)")
         print(f"{len(biomart_df)} entries before drop")
