@@ -10,3 +10,5 @@ If you have never used BAMmart before try using `python3 BAMmart.py --help`. The
 Once you know the query you want to send you may use the second command to perform the search and save the output to a csv file. For example, if I have several dozen bam files and I want to see if any of my ENST ids have RNACentral IDs, you can use the following command: `python3 BAMmart.py query --root_dir bam_dir --attributes rnacentral --output output.csv`. 
 ### Caveats
 Biomart reccommends that queries be sent in batch sizes of no more than 500 at a time. I have found that using a batch size of 500 still results in the request being declined for being too large. The batch size has been hardcoded to 400 IDs at a time for now but will have a parameter to change this in the future. Due batch submission requirement, BAMmart can be slow for data mining large sets of BAM files. Testing this tool has shown that processing 56 BAM files takes BAMmart around 30 minutes worst case.
+### Credit
+This tool uses pysam for parsing bam files and pybiomart for establishing a connection to biomart to submit requests. 

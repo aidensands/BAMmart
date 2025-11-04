@@ -5,11 +5,10 @@ import os
 import sys
 import argparse
 
-# --- Constants ---
-BATCH_SIZE = 400
+batch_size = 400
 
 
-def find_bam_files(root_dir: str):
+def find_bam_files(root_dir: str) -> list:
     """
     Recursively walks through root_dir and finds all files ending with .bam.
     """
@@ -24,7 +23,7 @@ def find_bam_files(root_dir: str):
     return bam_files
 
 
-def term_help(search_term: str):
+def term_help(search_term: str) -> None:
     """Takes a search term and returns a list of args containing the given search term"""
     database = Dataset(name='hsapiens_gene_ensembl',
                        host='http://www.ensembl.org')
@@ -51,7 +50,7 @@ def term_help(search_term: str):
         print("No Filters")
 
 
-def parse_enst(bam):
+def parse_enst(bam) -> list:
     """Extract unique ENST IDs from BAM file's RNAME field using pysam."""
     ids = set()
     print(f"1. Extracting IDs from {bam}...")
@@ -71,13 +70,13 @@ def parse_enst(bam):
         return []
 
 
-def biomart_query(ids, filter_name, attributes_list):
+def biomart_query(ids, filter_name, attributes_list, batch_size) -> pd.DataFrame:
     """Query BioMart in batches for accessions for the given ENST IDs."""
     if not ids:
         return pd.DataFrame()
 
     print(
-        f"\n2. Connecting to BioMart and querying in batches of {BATCH_SIZE}...")
+        f"\n2. Connecting to BioMart and querying in batches of {batch_size}...")
     all_results = []
 
     try:
@@ -86,10 +85,10 @@ def biomart_query(ids, filter_name, attributes_list):
 
         attributes = attributes_list
 
-        for i in range(0, len(ids), BATCH_SIZE):
-            batch = ids[i:i + BATCH_SIZE]
+        for i in range(0, len(ids), batch_size):
+            batch = ids[i:i + batch_size]
             print(
-                f"Querying batch {i // BATCH_SIZE + 1} of {(len(ids) // BATCH_SIZE) + 1} ({len(batch)} IDs)...")
+                f"Querying batch {i // batch_size + 1} of {(len(ids) // batch_size) + 1} ({len(batch)} IDs)...")
 
             filters = {filter_name: batch}
             map_df = database.query(
@@ -135,6 +134,7 @@ if __name__ == '__main__':
 
     search_parser.add_argument(
         '--root_dir',
+        '-r',
         type=str,
         help='Root directory where biomart will search for bam files recursively',
         required=True
@@ -142,6 +142,7 @@ if __name__ == '__main__':
 
     search_parser.add_argument(
         '--filter',
+        '-f',
         type=str,
         default='link_ensembl_transcript_stable_id',
         help='The input id (use link_ensembl_transcript_stable_id for ensts)'
@@ -149,6 +150,7 @@ if __name__ == '__main__':
 
     search_parser.add_argument(
         '--attributes',
+        '-a',
         nargs='+',
         help='One or a list of args for the information you want biomart to fetch (eg. try transcript_biotype)',
         required=True
@@ -156,9 +158,18 @@ if __name__ == '__main__':
 
     search_parser.add_argument(
         '--output',
+        '-o',
         type=str,
         required=True,
         help='Output file name (only csv supported for now)'
+    )
+
+    search_parser.add_argument(
+        '--batch_size',
+        '-b',
+        type=int,
+        required=False,
+        help='The number of ids to be sent in each query request. Note that Biomart suggests sizes less than 500'
     )
 
     help_parser = subparsers.add_parser(
@@ -166,6 +177,7 @@ if __name__ == '__main__':
 
     help_parser.add_argument(
         '--search_term',
+        '-s',
         type=str,
         help='Takes a search term and returns the related attributes and filters'
     )
@@ -193,8 +205,7 @@ if __name__ == '__main__':
             f"Found {len(all_enst_ids)} total unique ENST IDs across {len(all_bam_files)} files.")
 
         final_enst_list = list(all_enst_ids)
-        biomart_df = biomart_query(
-            final_enst_list, args.filter, args.attributes)
+        biomart_df = biomart_query(final_enst_list, args.filter, args.attributes, batch_size=args.batch_size)
 
         print("Biomart Queries Complete :)")
         print(f"{len(biomart_df)} entries before drop")
