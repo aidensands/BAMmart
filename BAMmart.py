@@ -69,6 +69,7 @@ def parse_enst(bam) -> list:
 
 
 def parse_ensg(bam):
+    # TODO: Review this code
     ids = set()
     try:
         with pysam.AlignmentFile(filename=bam, mode='rb') as samfile:
@@ -209,7 +210,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if '--helper' in sys.argv:
+    if 'helper' in sys.argv:
         if args.search_term:
             term_help(args.search_term)
             sys.exit()
