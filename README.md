@@ -1,5 +1,5 @@
 # BAMmart
-A command line utility for parsing bam files and using transcript or gene ids to query for biomart attributes. Currently a work in progress.
+A command line utility for parsing bam files and using transcript ids to query for biomart attributes. Currently a work in progress.
 
 ## Using BAMmart:
 Given a directory containing one or multiple bam files BAMmart can be used currently to fetch information from Ensembl Biomart.
