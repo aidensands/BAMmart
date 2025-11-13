@@ -11,7 +11,7 @@ def find_bam_files(root_dir: str) -> list:
     Recursively walks through root_dir and finds all files ending with .bam.
     """
     bam_files = []
-    print(f"Checking for .bam files...")
+    print("Checking for .bam files...")
     for dirpath, _, filenames in os.walk(root_dir):
         for f in filenames:
             if f.endswith('.bam'):
@@ -27,6 +27,7 @@ def term_help(search_term: str) -> None:
                        host='http://www.ensembl.org')
     attributes = list()
     filters = list()
+    search_term = search_term.lower()
     for term in database.attributes:
         if search_term in term:
             attributes.append(term)
@@ -131,7 +132,7 @@ def biomart_query(ids, filter_name, attributes_list, batch_size) -> pd.DataFrame
         final_df.columns = [c.strip().replace(" ", "_").lower()
                             for c in final_df.columns]
 
-        print("\n--- Final Combined DataFrame (normalized) ---")
+        print("\n Pre-Drop Dataframe Head")
         print(final_df.head(100))
 
         print(f"Total rows: {len(final_df)}\n")
@@ -231,11 +232,14 @@ if __name__ == '__main__':
             f"Found {len(all_enst_ids)} total unique ENST IDs across {len(all_bam_files)} files.")
 
         final_enst_list = list(all_enst_ids)
+        
         biomart_df = biomart_query(
-            final_enst_list, args.filter, args.attributes, batch_size=args.batch_size)
+            ids=final_enst_list, 
+            filter_name=args.filter, 
+            attributes_list=args.attributes, 
+            batch_size=args.batch_size)
 
         print("Biomart Queries Complete :)")
-        print(f"{len(biomart_df)} entries before drop")
         biomart_df = biomart_df.dropna()
-        print(f"{len(biomart_df)} entries after drop")
+        print(f"{len(biomart_df)} entries (No Duplicate Drop)")
         biomart_df.to_csv(args.output)
